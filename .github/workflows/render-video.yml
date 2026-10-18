@@ -1,0 +1,59 @@
+
+name: Render SkillSeek Urdu Video
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'skillseek_render.py'
+      - 'video_content.json'
+      - '.github/workflows/render-video.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install Pillow arabic-reshaper python-bidi
+
+      - name: Check video content
+        run: python -m json.tool video_content.json > /dev/null
+
+      - name: Render MP4
+        run: python skillseek_render.py
+
+      - name: Check generated video
+        run: |
+          test -s output/skillseek_urdu_ai_tools.mp4
+          ffprobe -v error \
+            -show_entries format=duration \
+            -of default=noprint_wrappers=1 \
+            output/skillseek_urdu_ai_tools.mp4
+
+      - name: Upload finished video
+        uses: actions/upload-artifact@v4
+        with:
+          name: skillseek-urdu-video
+          path: output/skillseek_urdu_ai_tools.mp4
+          if-no-files-found: error
+          retention-days: 7
