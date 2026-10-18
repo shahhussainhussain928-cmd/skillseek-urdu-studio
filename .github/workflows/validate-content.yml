@@ -1,22 +1,22 @@
 
-name: Validate SkillSeek Urdu Content
+name: SkillSeek Urdu Font Test
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'video_content.json'
-      - '.github/workflows/validate-content.yml'
+      - 'urdu_font_test.py'
+      - '.github/workflows/font-test.yml'
 
 permissions:
   contents: read
 
 jobs:
-  validate:
+  font-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Get repository files
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -24,32 +24,22 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Validate video content
+      - name: Install Pillow
+        run: python -m pip install --upgrade Pillow
+
+      - name: Run Urdu font test
+        run: python urdu_font_test.py
+
+      - name: Check generated image
         run: |
-          python - <<'PY'
-          import json
+          ls -la output
+          test -s output/urdu_font_test.png
 
-          with open("video_content.json", encoding="utf-8") as f:
-              data = json.load(f)
-
-          assert data["channel"] == "SKILLSEEK URDU"
-          assert data["width"] == 1280
-          assert data["height"] == 720
-
-          scenes = data["scenes"]
-          assert len(scenes) == 10, "Expected exactly 10 scenes"
-
-          for number, scene in enumerate(scenes, start=1):
-              assert scene["duration"] == 30, f"Scene {number}: duration must be 30 seconds"
-              assert scene["heading"].strip(), f"Scene {number}: heading is empty"
-              assert scene["lines"], f"Scene {number}: no text lines"
-
-          total = sum(scene["duration"] for scene in scenes)
-          assert total == 300, f"Expected 300 seconds, got {total}"
-
-          print("SUCCESS: JSON is valid.")
-          print(f"Scenes: {len(scenes)}")
-          print(f"Duration: {total // 60} minutes")
-          print("Resolution: 1280 x 720")
-          print("Channel: SKILLSEEK URDU")
-          PY
+      - name: Upload Urdu test image
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urdu-font-test
+          path: output/urdu_font_test.png
+          if-no-files-found: error
+          retention-days: 7
