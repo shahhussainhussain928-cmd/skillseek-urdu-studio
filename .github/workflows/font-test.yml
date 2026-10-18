@@ -1,0 +1,39 @@
+
+name: SkillSeek Urdu Font Test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'urdu_font_test.py'
+      - '.github/workflows/font-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  font-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get repository files
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Pillow
+        run: python -m pip install --upgrade Pillow
+
+      - name: Run Urdu font test
+        run: python urdu_font_test.py
+
+      - name: Save test image
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urdu-font-test
+          path: output/urdu_font_test.png
+          if-no-files-found: ignore
